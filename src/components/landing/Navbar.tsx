@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Users, LogIn, UserPlus } from 'lucide-react'; // Added UserPlus
+import { Users, LogIn, UserPlus, LayoutDashboard } from 'lucide-react'; // Added LayoutDashboard
 
 const Navbar: React.FC = () => {
   return (
@@ -11,7 +11,7 @@ const Navbar: React.FC = () => {
           {/* Updated Brand Name */}
           <span>AmplifyHub</span>
         </Link>
-        <div className="space-x-2 sm:space-x-4">
+        <div className="space-x-2 sm:space-x-4 flex items-center"> {/* Use flex items-center */}
           {/* Changed Link 'to' prop from /#features to /features */}
           <Link to="/features" className="text-gray-600 hover:text-indigo-600 transition-colors px-2 py-1 rounded">Features</Link>
           {/* Add Pricing, About links later if needed */}
@@ -28,12 +28,23 @@ const Navbar: React.FC = () => {
             <UserPlus size={18} className="mr-2" />
             Sign Up
           </Link>
-           <Link
-            to="/app" // Keep link to app for logged-in state (or remove if auth guards added later)
+           {/* Keep original "Go to App" link for potential future use */}
+           {/* <Link
+            to="/app"
             className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 ml-2"
           >
             <LogIn size={18} className="mr-2" />
             Go to App
+          </Link> */}
+
+           {/* Added Dashboard Demo Link */}
+           <Link
+            to="/app/dashboard" // Direct link to the dashboard
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white font-medium rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200 ml-2"
+            title="View Dashboard Demo"
+          >
+            <LayoutDashboard size={18} className="mr-2" />
+            Dashboard Demo
           </Link>
         </div>
       </div>
