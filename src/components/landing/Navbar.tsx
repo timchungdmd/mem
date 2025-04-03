@@ -8,10 +8,12 @@ const Navbar: React.FC = () => {
       <div className="container mx-auto px-6 py-3 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-2 text-xl font-bold text-indigo-600">
           <Users size={28} />
-          <span>MemberFlow</span> {/* Example App Name */}
+          {/* Updated Brand Name */}
+          <span>AmplifyHub</span>
         </Link>
         <div className="space-x-2 sm:space-x-4">
-          <Link to="/#features" className="text-gray-600 hover:text-indigo-600 transition-colors px-2 py-1 rounded">Features</Link>
+          {/* Changed Link 'to' prop from /#features to /features */}
+          <Link to="/features" className="text-gray-600 hover:text-indigo-600 transition-colors px-2 py-1 rounded">Features</Link>
           {/* Add Pricing, About links later if needed */}
            <Link
             to="/login" // Link to a future login page

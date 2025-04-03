@@ -9,7 +9,8 @@ const SignUpPage: React.FC = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
          <Link to="/" className="flex justify-center items-center space-x-2 text-3xl font-bold text-indigo-600 mb-6">
             <Users size={36} />
-            <span>MemberFlow</span>
+             {/* Updated Brand Name */}
+            <span>AmplifyHub</span>
          </Link>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Create your account
@@ -25,7 +26,8 @@ const SignUpPage: React.FC = () => {
         </div>
       </div>
        <p className="mt-6 text-center text-xs text-gray-500">
-          &copy; {new Date().getFullYear()} MemberFlow. All rights reserved.
+           {/* Updated Brand Name */}
+          &copy; {new Date().getFullYear()} AmplifyHub. All rights reserved.
         </p>
     </div>
   );
