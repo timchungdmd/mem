@@ -5,11 +5,19 @@ import { Users } from 'lucide-react';
 
 interface MemberListProps {
   members: Member[];
-  onEditMember: (member: Member) => void;
+  onEditMember: (updatedMember: Member) => void;
   onDeleteMember: (id: string) => void;
 }
 
 const MemberList: React.FC<MemberListProps> = ({ members, onEditMember, onDeleteMember }) => {
+
+  const handleQuickEditSave = (updatedMember: Member) => {
+    // Update member in the list
+    const updatedMembers = members.map(m => m.id === updatedMember.id ? updatedMember : m);
+    onEditMember(updatedMembers); // Pass the updated list back to parent
+  };
+
+
   if (members.length === 0) {
     return (
       <div className="text-center py-10 px-4">
@@ -26,7 +34,7 @@ const MemberList: React.FC<MemberListProps> = ({ members, onEditMember, onDelete
         <MemberItem
           key={member.id}
           member={member}
-          onEdit={onEditMember}
+          onEdit={handleQuickEditSave} // Pass the quick edit handler
           onDelete={onDeleteMember}
         />
       ))}
