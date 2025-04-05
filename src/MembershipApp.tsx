@@ -69,9 +69,27 @@ function MembershipApp() {
   };
 
 
-  const handleDeleteMember = (id: string) => {
+  const handleDeleteMember = async (id: string) => {
+    console.log('Deleting member with ID:', id); // Add console log
     if (window.confirm('Are you sure you want to delete this member?')) {
-       setMembers(members.filter(member => member.id !== id));
+      try {
+        const { data, error } = await supabase
+          .from('members')
+          .delete()
+          .eq('id', id)
+          .select(); // Select the deleted row
+
+        if (error) {
+          console.error('Supabase delete error:', error);
+          alert(`Failed to delete member: ${error.message}`);
+        } else {
+          console.log('Member deleted successfully:', id, data);
+          toggleRefreshMembers(); // Refresh the member list
+        }
+      } catch (err) {
+        console.error('Database error deleting member:', err);
+        alert('Failed to delete member. Please try again.');
+      }
     }
   };
 

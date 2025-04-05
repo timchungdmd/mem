@@ -93,7 +93,7 @@ const MemberItem: React.FC<MemberItemProps> = ({ member, onEdit, onDelete }) => 
         </div>
         <div className="flex items-center text-sm text-gray-500">
           <Calendar size={16} className="mr-2" />
-          <span>Joined: {new Date(member.joinDate).toLocaleDateString()}</span>
+          <span>Joined: {member.joinDate ? new Date(member.joinDate).toLocaleDateString() : 'N/A'}</span>
         </div>
       </div>
       <div className="flex space-x-2 flex-shrink-0">
@@ -126,7 +126,10 @@ const MemberItem: React.FC<MemberItemProps> = ({ member, onEdit, onDelete }) => 
               <Edit size={18} />
             </button>
             <button
-              onClick={() => onDelete(member.id)}
+              onClick={() => {
+                console.log('Deleting member with ID:', member.id);
+                onDelete(member.id);
+              }}
               className="p-2 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full transition-colors duration-200"
               aria-label={`Delete ${member.name}`}
               title="Delete Member"
