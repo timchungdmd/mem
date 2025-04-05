@@ -1,56 +1,108 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import StatCard from '../components/dashboard/StatCard';
 import RecentActivityFeed from '../components/dashboard/RecentActivityFeed';
 import MembershipTierDistributionChart from '../components/dashboard/MembershipTierDistributionChart';
 import QuickActions from '../components/dashboard/QuickActions';
 import { Users, DollarSign, UserCheck, BarChartHorizontal } from 'lucide-react';
-
-// Mock Data Generation
-const generateMockData = () => {
-  const totalMembers = 1250;
-  const newMembersThisMonth = 75;
-  const monthlyRevenue = 5230.50;
-  const previousMonthRevenue = 4980.00;
-  const revenueChange = (((monthlyRevenue - previousMonthRevenue) / previousMonthRevenue) * 100).toFixed(1);
-
-  const activities = [
-    { id: 'a1', type: 'new_member', description: 'Alice Johnson joined (Premium)', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-    { id: 'a2', type: 'renewal', description: 'Bob Smith renewed (Basic)', timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString() },
-    { id: 'a3', type: 'tier_change', description: 'Charlie Brown upgraded to VIP', timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
-    { id: 'a4', type: 'new_member', description: 'Diana Prince joined (Basic)', timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
-  ] as const; // Use 'as const' for stricter type inference if needed
-
-  const tierData = [
-    { name: 'Basic', value: Math.floor(totalMembers * 0.6) },
-    { name: 'Premium', value: Math.floor(totalMembers * 0.3) },
-    { name: 'VIP', value: Math.floor(totalMembers * 0.1) },
-  ] as const;
-
-  // Ensure tier counts roughly add up to totalMembers (adjust last one)
-  const calculatedSum = tierData.reduce((sum, tier) => sum + tier.value, 0);
-  tierData[tierData.length - 1].value += totalMembers - calculatedSum;
-
-
-  return {
-    stats: {
-      totalMembers,
-      newMembersThisMonth,
-      monthlyRevenue,
-      revenueChange: `+${revenueChange}%`, // Format change string
-      activeMembers: Math.floor(totalMembers * 0.85), // Mock active members for "Engagement"
-    },
-    activities,
-    tierData,
-  };
-};
-
+import { supabase } from '../supabaseClient';
 
 interface DashboardPageProps {
    onAddMemberClick: () => void; // To open the Add Member form modal
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ onAddMemberClick }) => {
-  const mockData = generateMockData();
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [newMembersThisMonth, setNewMembersThisMonth] = useState(0);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [activeMembers, setActiveMembers] = useState(0);
+  const [tierData, setTierData] = useState<{ name: string; value: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch total members
+        const { data: membersData, error: membersError } = await supabase
+          .from('members')
+          .select('*', { count: 'exact' });
+
+        if (membersError) {
+          setError(membersError.message);
+          throw membersError;
+        }
+
+        const totalMembersCount = membersData ? membersData.length : 0;
+        setTotalMembers(totalMembersCount);
+
+        // Fetch new members this month
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        const { data: newMembersData, error: newMembersError } = await supabase
+          .from('members')
+          .select('*', { count: 'exact' })
+          .gte('join_date', startOfMonth.toISOString());
+
+        if (newMembersError) {
+          setError(newMembersError.message);
+          throw newMembersError;
+        }
+
+        const newMembersCount = newMembersData ? newMembersData.length : 0;
+        setNewMembersThisMonth(newMembersCount);
+
+        // Fetch monthly revenue (This is a placeholder, you'll need to implement actual revenue tracking)
+        // const { data: revenueData, error: revenueError } = await supabase
+        //   .from('payments')
+        //   .select('sum(amount)')
+        //   .gte('date', startOfMonth.toISOString());
+
+        // if (revenueError) {
+        //   setError(revenueError.message);
+        //   throw revenueError;
+        // }
+
+        // const totalRevenue = revenueData && revenueData[0]?.sum ? revenueData[0].sum : 0;
+        setMonthlyRevenue(5230.50); // setting mock data
+
+         // Fetch active members (This is a placeholder, you'll need to implement actual active tracking)
+        setActiveMembers(Math.floor(totalMembersCount * 0.85));
+
+        // Fetch tier data
+        const basicMembers = Math.floor(totalMembersCount * 0.6);
+        const premiumMembers = Math.floor(totalMembersCount * 0.3);
+        const vipMembers = totalMembersCount - basicMembers - premiumMembers;
+
+        setTierData([
+          { name: 'Basic', value: basicMembers },
+          { name: 'Premium', value: premiumMembers },
+          { name: 'VIP', value: vipMembers },
+        ]);
+
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to fetch dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Calculate revenue change (This is a placeholder, you'll need to implement actual previous month revenue tracking)
+  const previousMonthRevenue = 4980.00;
+  const revenueChange = (((monthlyRevenue - previousMonthRevenue) / previousMonthRevenue) * 100).toFixed(1);
+
+  if (loading) {
+    return <div className="p-6">Loading dashboard data...</div>;
+  }
+
+  if (error) {
+    return <div className="p-6 text-red-500">Error: {error}</div>;
+  }
 
   return (
     <div className="p-6 bg-gray-50 min-h-full"> {/* Ensure page takes height */}
@@ -61,8 +113,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onAddMemberClick }) => {
         <StatCard
           icon={Users}
           title="Total Members"
-          value={mockData.stats.totalMembers}
-          change={`+${mockData.stats.newMembersThisMonth} this month`}
+          value={totalMembers}
+          change={`+${newMembersThisMonth} this month`}
           changeType="positive"
           bgColorClass="bg-blue-500"
           iconColorClass="text-blue-100"
@@ -70,8 +122,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onAddMemberClick }) => {
         <StatCard
           icon={DollarSign}
           title="Monthly Revenue"
-          value={`$${mockData.stats.monthlyRevenue.toFixed(2)}`}
-          change={mockData.stats.revenueChange}
+          value={`$${monthlyRevenue.toFixed(2)}`}
+          change={`+${revenueChange}%`}
           changeType="positive"
            bgColorClass="bg-green-500"
            iconColorClass="text-green-100"
@@ -79,7 +131,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onAddMemberClick }) => {
          <StatCard
           icon={UserCheck}
           title="Active Members"
-          value={mockData.stats.activeMembers}
+          value={activeMembers}
           // change="-2% vs last month" // Example change
           // changeType="negative"
            bgColorClass="bg-yellow-500"
@@ -105,10 +157,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ onAddMemberClick }) => {
       {/* Charts and Feeds Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-           <MembershipTierDistributionChart data={mockData.tierData} />
+           <MembershipTierDistributionChart data={tierData} />
         </div>
         <div className="lg:col-span-2">
-          <RecentActivityFeed activities={mockData.activities} />
+          <RecentActivityFeed activities={[]} />
         </div>
       </div>
 
