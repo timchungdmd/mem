@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Member } from '../types';
 import { PlusCircle, X } from 'lucide-react';
+import { supabase } from '../supabaseClient'; // Import Supabase client
 
 interface AddMemberFormProps {
-  onAddMember: (newMember: Omit<Member, 'id' | 'joinDate'>) => void;
+  onAddMember: (newMember: Omit<Member, 'id' | 'joinDate'>) => Promise<void>; // Updated onAddMember type to be async and return a Promise
   onCancel: () => void;
 }
 
@@ -11,15 +12,29 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onAddMember, onCancel }) 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [membershipLevel, setMembershipLevel] = useState<'Basic' | 'Premium' | 'VIP'>('Basic');
+  const [loading, setLoading] = useState(false); // Add loading state
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email) {
-      alert('Please fill in all fields.'); // Simple validation
+      alert('Please fill in all fields.');
       return;
     }
-    onAddMember({ name, email, membershipLevel });
-    // Reset form could happen here or in the parent component after successful add
+
+    setLoading(true); // Start loading
+    try {
+      await onAddMember({ name, email, membership_level: membershipLevel }); // Pass membershipLevel
+      // Reset form on success
+      setName('');
+      setEmail('');
+      setMembershipLevel('Basic');
+      onCancel(); // Close the form after successful submission
+    } catch (error) {
+      console.error('Error adding member to Supabase:', error);
+      alert('Failed to add member. Please try again.'); // Better error feedback
+    } finally {
+      setLoading(false); // End loading regardless of success or failure
+    }
   };
 
   return (
@@ -45,6 +60,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onAddMember, onCancel }) 
               onChange={(e) => setName(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               required
+              disabled={loading} // Disable input during loading
             />
           </div>
           <div>
@@ -58,6 +74,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onAddMember, onCancel }) 
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               required
+              disabled={loading}
             />
           </div>
           <div>
@@ -69,6 +86,7 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onAddMember, onCancel }) 
               value={membershipLevel}
               onChange={(e) => setMembershipLevel(e.target.value as 'Basic' | 'Premium' | 'VIP')}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              disabled={loading}
             >
               <option value="Basic">Basic</option>
               <option value="Premium">Premium</option>
@@ -80,15 +98,17 @@ const AddMemberForm: React.FC<AddMemberFormProps> = ({ onAddMember, onCancel }) 
               type="button"
               onClick={onCancel}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={loading}
             >
               <PlusCircle size={18} className="mr-2" />
-              Add Member
+              {loading ? 'Adding...' : 'Add Member'}
             </button>
           </div>
         </form>

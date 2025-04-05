@@ -14,29 +14,60 @@ import AddMemberForm from './components/AddMemberForm';
 import { Member } from './types';
 // Import Icons
 import { Plus, LayoutDashboard, Users as UsersIcon, Settings, ShieldCheck, Upload, Download, UserCog } from 'lucide-react';
+import { supabase } from './supabaseClient'; // Import Supabase client
 
-// Dummy data
-const initialMembers: Member[] = [
-  { id: '1', name: 'Alice Wonderland', email: 'alice@example.com', membershipLevel: 'Premium', joinDate: new Date(2023, 5, 15).toISOString() },
-  { id: '2', name: 'Bob The Builder', email: 'bob@example.com', membershipLevel: 'Basic', joinDate: new Date(2024, 0, 10).toISOString() },
-  { id: '3', name: 'Charlie Chaplin', email: 'charlie@example.com', membershipLevel: 'VIP', joinDate: new Date(2022, 11, 1).toISOString() },
-];
+// Dummy data - REMOVE MOCK DATA
+const initialMembers: Member[] = [];
+
 
 function MembershipApp() {
-  const [members, setMembers] = useState<Member[]>(initialMembers);
+  const [members, setMembers] = useState<Member[]>(initialMembers); // Initialize with empty array
   const [showAddForm, setShowAddForm] = useState(false);
   const location = useLocation();
 
-  // Member Handlers
-  const handleAddMember = (newMemberData: Omit<Member, 'id' | 'joinDate'>) => {
-    const newMember: Member = {
-      ...newMemberData,
-      id: crypto.randomUUID(),
-      joinDate: new Date().toISOString(),
-    };
-    setMembers([...members, newMember]);
-    setShowAddForm(false);
+  // Function to refresh the member list
+  const [refreshMembers, setRefreshMembers] = useState(false);
+  const toggleRefreshMembers = () => {
+    setRefreshMembers(prev => !prev);
   };
+
+  // Member Handlers
+  const handleAddMember = async (newMemberData: Omit<Member, 'id' | 'joinDate'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .insert([
+          {
+            ...newMemberData,
+            join_date: new Date().toISOString(),
+            membership_level: newMemberData.membershipLevel, // Corrected: Use membership_level
+          },
+        ])
+        .select(); // Select to return the newly inserted row
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        alert(`Failed to add member: ${error.message}`); // Display the error message to the user
+        throw error; // Re-throw to stop further execution
+      }
+
+      if (data && data.length > 0) {
+        // Assuming insert returns the newly created member
+        const addedMember = data[0] as Member; // Type cast to Member
+        // Instead of updating local state, we should ideally refetch members from DB to keep data consistent, or handle optimistic updates
+        // For simplicity, let's just log the success for now. In a real app, you'd refresh the member list.
+        console.log('Member added successfully:', addedMember);
+        // In a real app, you might want to refresh the member list here or use optimistic updates
+        toggleRefreshMembers();
+      } else {
+        throw new Error('Failed to add member: No data returned from insert operation.');
+      }
+    } catch (err) {
+      console.error('Database error adding member:', err);
+      throw err; // Re-throw to let the form handle the error
+    }
+  };
+
 
   const handleDeleteMember = (id: string) => {
     if (window.confirm('Are you sure you want to delete this member?')) {
@@ -133,7 +164,7 @@ function MembershipApp() {
                            <Plus size={20} className="mr-2" /> Add Member
                          </button>
                        </div>
-                       <MemberList members={members} onEditMember={handleEditMemberList} onDeleteMember={handleDeleteMember} />
+                       <MemberList members={members} onEditMember={handleEditMemberList} onDeleteMember={handleDeleteMember} refresh={refreshMembers} />
                     </div>
                  } />
                  <Route path=":id" element={<MemberProfilePage />} />

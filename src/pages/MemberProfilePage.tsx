@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Member } from '../types'; // Assuming Tier might be needed later
-import { ArrowLeft, User, Mail, Award, Calendar, Edit, Save, X, Info, Briefcase, Star } from 'lucide-react';
+import { Member } from '../types';
+import { ArrowLeft, User, Mail, Award, Calendar, Edit, Save, X, Info, Briefcase, Star, Wallet, Repeat, ShieldCheck } from 'lucide-react'; // Added ShieldCheck icon
+import PaymentForm from '../components/PaymentForm'; // Import PaymentForm
 
 // Mock function to fetch member data (replace with API call later)
 const fetchMemberById = async (id: string): Promise<Member | null> => {
   console.log(`Fetching member with ID: ${id}`);
   // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 300));
-  // Find member in dummy data (or return a default mock)
   const dummyMembers: Member[] = [
     { id: '1', name: 'Alice Wonderland', email: 'alice@example.com', membershipLevel: 'Premium', joinDate: new Date(2023, 5, 15).toISOString() },
     { id: '2', name: 'Bob The Builder', email: 'bob@example.com', membershipLevel: 'Basic', joinDate: new Date(2024, 0, 10).toISOString() },
@@ -16,7 +16,6 @@ const fetchMemberById = async (id: string): Promise<Member | null> => {
   ];
    const foundMember = dummyMembers.find(m => m.id === id);
    if (foundMember) {
-     // Add mock custom fields
      return {
        ...foundMember,
        // @ts-ignore - adding mock fields dynamically
@@ -24,16 +23,54 @@ const fetchMemberById = async (id: string): Promise<Member | null> => {
          'Job Title': 'Curious Explorer',
          'Interests': ['Tea Parties', 'Logic Puzzles'],
          'Referral Source': 'White Rabbit',
-       }
+       },
+       // Mock billing data
+       billing: {
+         nextRenewalDate: new Date(2024, 8, 15).toISOString(),
+         paymentMethod: 'Visa ending in 1234',
+         billingHistory: [
+           { date: new Date(2024, 7, 15).toISOString(), amount: 25.00, status: 'Paid' },
+           { date: new Date(2024, 6, 15).toISOString(), amount: 25.00, status: 'Paid' },
+         ]
+       },
+       // Mock access permissions based on membership level
+       accessPermissions: getMockPermissions(foundMember.membershipLevel)
      };
    }
-  return null; // Or return a default mock member structure
+  return null;
 };
 
-// Mock Custom Field Definition (replace with dynamic loading later)
+// Mock function to return permissions based on membership level
+const getMockPermissions = (level: Member['membershipLevel']) => {
+  switch (level) {
+    case 'VIP':
+      return [
+        'Access to VIP Lounge',
+        'Early Access to Events',
+        'Dedicated Support Channel',
+        'Download Premium Resources',
+      ];
+    case 'Premium':
+      return [
+        'Access to Premium Content',
+        'Webinar Access',
+        'Priority Support',
+        'Download Standard Resources',
+      ];
+    case 'Basic':
+    default:
+      return [
+        'Access to Community Forum',
+        'Monthly Newsletter',
+        'View Basic Content',
+      ];
+  }
+};
+
+
 const mockCustomFieldDefinitions = [
     { id: 'cf1', name: 'Job Title', type: 'text' },
-    { id: 'cf2', name: 'Interests', type: 'tags' }, // Example types
+    { id: 'cf2', name: 'Interests', type: 'tags' },
     { id: 'cf3', name: 'Referral Source', type: 'text' },
 ];
 
@@ -44,8 +81,8 @@ const MemberProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  // State to hold edited values (initialize with member data when editing starts)
   const [editData, setEditData] = useState<Partial<Member> & { customFields?: Record<string, any> }>({});
+  const [showPaymentForm, setShowPaymentForm] = useState(false); // State for PaymentForm visibility
 
   useEffect(() => {
     if (id) {
@@ -55,7 +92,7 @@ const MemberProfilePage: React.FC = () => {
           if (data) {
             setMember(data);
             // @ts-ignore
-            setEditData({ ...data, customFields: { ...(data.customFields || {}) } }); // Initialize edit data
+            setEditData({ ...data, customFields: { ...(data.customFields || {}) } });
           } else {
             setError('Member not found.');
           }
@@ -87,27 +124,33 @@ const MemberProfilePage: React.FC = () => {
   };
 
   const handleSave = () => {
-    // --- Placeholder for actual update logic ---
     console.log('Saving updated member data (placeholder):', editData);
-    // Simulate API call
     setLoading(true);
     setTimeout(() => {
-        // Update the main member state with edited data
         setMember(prev => ({ ...prev, ...editData } as Member));
         setIsEditing(false);
         setLoading(false);
         alert('Member data updated (placeholder)!');
     }, 500);
-    // --- End Placeholder ---
   };
 
   const handleCancelEdit = () => {
-    // Reset editData to original member data
     if (member) {
         // @ts-ignore
         setEditData({ ...member, customFields: { ...(member.customFields || {}) } });
     }
     setIsEditing(false);
+  };
+
+  const handlePaymentSubmit = (paymentData: any) => {
+    console.log('Payment data submitted:', paymentData);
+    // Simulate updating member's subscription data
+    alert('Payment processed successfully (placeholder)!');
+    setShowPaymentForm(false);
+  };
+
+  const handleCancelPayment = () => {
+    setShowPaymentForm(false);
   };
 
 
@@ -119,6 +162,10 @@ const MemberProfilePage: React.FC = () => {
   const customFields = member.customFields || {};
   // @ts-ignore
   const editCustomFields = editData.customFields || {};
+   // @ts-ignore - Accessing mock billing data
+  const billingData = member.billing || {};
+   // @ts-ignore - Accessing mock accessPermissions data
+  const accessPermissions = member.accessPermissions || [];
 
 
   return (
@@ -138,7 +185,7 @@ const MemberProfilePage: React.FC = () => {
                     name="name"
                     value={editData.name || ''}
                     onChange={handleInputChange}
-                    className="text-2xl font-semibold input-style -m-1 p-1" // Basic styling
+                    className="text-2xl font-semibold input-style -m-1 p-1"
                  />
               ) : (
                  member.name
@@ -210,7 +257,6 @@ const MemberProfilePage: React.FC = () => {
                 <span className="font-medium text-gray-600 mr-2">Joined:</span>
                 <span className="text-gray-700">{new Date(member.joinDate).toLocaleDateString()}</span>
              </div>
-             {/* Add more core fields here: Status, Renewal Date etc. */}
           </div>
 
           {/* Custom Fields */}
@@ -218,19 +264,17 @@ const MemberProfilePage: React.FC = () => {
              <h3 className="text-lg font-medium text-gray-700 border-b pb-1 mb-2">Additional Information</h3>
              {mockCustomFieldDefinitions.map(field => (
                 <div key={field.id} className="flex items-start text-sm">
-                    {/* Choose icon based on field type or name */}
                     {field.name === 'Job Title' && <Briefcase size={16} className="mr-2 mt-0.5 text-gray-500 flex-shrink-0" />}
                     {field.name === 'Interests' && <Star size={16} className="mr-2 mt-0.5 text-gray-500 flex-shrink-0" />}
                     {field.name !== 'Job Title' && field.name !== 'Interests' && <Info size={16} className="mr-2 mt-0.5 text-gray-500 flex-shrink-0" />}
 
                     <span className="font-medium text-gray-600 mr-2 w-28 flex-shrink-0">{field.name}:</span>
                     {isEditing ? (
-                        // Render input based on field type (simplified)
                         field.type === 'tags' ? (
                              <input
                                 type="text"
                                 value={Array.isArray(editCustomFields[field.name]) ? editCustomFields[field.name].join(', ') : editCustomFields[field.name] || ''}
-                                onChange={(e) => handleCustomFieldChange(field.name, e.target.value.split(',').map(s => s.trim()))} // Simple comma separation
+                                onChange={(e) => handleCustomFieldChange(field.name, e.target.value.split(',').map(s => s.trim()))}
                                 className="input-style text-sm p-1 flex-grow"
                                 placeholder="tag1, tag2, ..."
                              />
@@ -244,7 +288,6 @@ const MemberProfilePage: React.FC = () => {
                         )
                     ) : (
                         <span className="text-gray-700">
-                            {/* Display based on type */}
                             {field.type === 'tags' && Array.isArray(customFields[field.name])
                                 ? customFields[field.name].map((tag: string) => <span key={tag} className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs mr-1">{tag}</span>)
                                 : customFields[field.name] || <i className="text-gray-400">Not set</i>
@@ -256,11 +299,77 @@ const MemberProfilePage: React.FC = () => {
              {!isEditing && Object.keys(customFields).length === 0 && <p className="text-sm text-gray-400 italic">No additional information provided.</p>}
           </div>
 
+          {/* Billing Section - Mock Data */}
+          <div className="md:col-span-3 border-t pt-6 space-y-4">
+                <h3 className="text-lg font-medium text-gray-700 border-b pb-1 mb-2 flex items-center"><Wallet size={20} className="mr-2 text-gray-500" /> Billing & Subscription</h3>
+                <div className="flex items-center text-sm mb-2">
+                    <Repeat size={16} className="mr-2 text-gray-500" />
+                    <span className="font-medium text-gray-600 mr-2">Next Renewal:</span>
+                    <span className="text-gray-700">{billingData.nextRenewalDate ? new Date(billingData.nextRenewalDate).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div className="flex items-center text-sm mb-2">
+                    <Info size={16} className="mr-2 text-gray-500" />
+                    <span className="font-medium text-gray-600 mr-2">Payment Method:</span>
+                    <span className="text-gray-700">{billingData.paymentMethod || 'N/A'}</span>
+                </div>
+
+
+                {billingData.billingHistory && billingData.billingHistory.length > 0 && (
+                  <div>
+                    <h4 className="text-md font-semibold text-gray-700 mb-2">Billing History</h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full border-collapse border border-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th className="px-4 py-2 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th className="px-4 py-2 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {billingData.billingHistory.map((item, index) => (
+                            <tr key={index}>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{new Date(item.date).toLocaleDateString()}</td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">${item.amount.toFixed(2)}</td>
+                              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{item.status}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                {billingData.billingHistory && billingData.billingHistory.length === 0 && (
+                  <p className="text-sm text-gray-500 italic">No billing history available.</p>
+                )}
+
+
+                <div className="mt-4 flex space-x-2">
+                  <button className="btn-secondary-sm">Update Payment Method (Placeholder)</button>
+                  <button className="btn-secondary-sm">View Invoices (Placeholder)</button>
+                   <button onClick={() => setShowPaymentForm(true)} className="btn-primary-sm">Subscribe</button> {/* Button to show PaymentForm */}
+                </div>
+           </div>
+
+           {/* Access Permissions Section - Mock Data */}
+           <div className="md:col-span-3 border-t pt-6 space-y-4">
+                <h3 className="text-lg font-medium text-gray-700 border-b pb-1 mb-2 flex items-center"><ShieldCheck size={20} className="mr-2 text-gray-500" /> Access Permissions</h3>
+                {accessPermissions.length > 0 ? (
+                  <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                    {accessPermissions.map((permission, index) => (
+                      <li key={index}>{permission}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">No specific permissions defined for this membership level.</p>
+                )}
+           </div>
+
+
           {/* Placeholder Sections */}
            <div className="md:col-span-3 border-t pt-6 space-y-4">
                 <h3 className="text-lg font-medium text-gray-700">Activity & History (Placeholders)</h3>
                 <p className="text-sm text-gray-500">Membership history, event attendance, communication logs, etc., will appear here.</p>
-                {/* Add placeholder elements for history, notes, etc. */}
            </div>
         </div>
       </div>
@@ -278,6 +387,12 @@ const MemberProfilePage: React.FC = () => {
         }
          .btn-secondary-sm:hover { background-color: #f9fafb; }
        `}</style>
+       {showPaymentForm && (
+        <PaymentForm
+          onSubmit={handlePaymentSubmit}
+          onCancel={handleCancelPayment}
+        />
+      )}
     </div>
   );
 };
